@@ -26,3 +26,4 @@ Or, with Gradle 8.9 installed: `gradle assembleDebug` → `app/build/outputs/apk
 - Same DRM limits as the extension (Netflix, Spotify, etc. can't be processed).
 - Popup layout was desktop-sized (440px); it's stretched to fit — tweak spacing in popup.html if anything looks cramped.
 "# sonic_layer" 
+"# sonic_lear" 
