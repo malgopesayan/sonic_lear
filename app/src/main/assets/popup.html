@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <style>
+    :root {
+      --primary: #00f2ff;
+      --secondary: #bd00ff;
+      --bg-dark: #050505;
+      --panel-bg: rgba(20, 20, 25, 0.7);
+      --glass: rgba(255, 255, 255, 0.05);
+      --text-muted: #8b949e;
+      --good: #00ff88;
+      --bad: #ff3333;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      width: 440px;
+      background: radial-gradient(circle at top center, #1a1a2e 0%, var(--bg-dark) 80%);
+      color: #fff;
+      font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+      padding: 0;
+      margin: 0;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+    /* HEADER */
+    .header {
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.5);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow: 0 0 10px var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .brand span { color: var(--primary); }
+
+    .power-btn {
+      background: rgba(0, 255, 136, 0.1);
+      border: 1px solid var(--good);
+      color: var(--good);
+      font-size: 10px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 1px;
+      transition: 0.2s;
+      box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+    }
+
+    .power-btn:hover { background: rgba(0, 255, 136, 0.2); }
+
+    .power-btn.offline {
+      border-color: var(--bad);
+      color: var(--bad);
+      background: rgba(255, 51, 51, 0.1);
+      box-shadow: 0 0 5px rgba(255, 51, 51, 0.2);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: currentColor;
+      border-radius: 50%;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    /* VISUALIZER */
+    .viz-container {
+      position: relative;
+      background: #000;
+      height: 92px;
+      width: 100%;
+      border-bottom: 1px solid #222;
+      overflow: hidden;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      -webkit-box-reflect: below 0px linear-gradient(to bottom, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.4));
+    }
+
+    .viz-overlay {
+      position: absolute;
+      top: 8px;
+      left: 14px;
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 2px;
+    }
+
+    .viz-site {
+      position: absolute;
+      top: 8px;
+      right: 14px;
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 1px;
+    }
+
+    /* TAB BAR */
+    .tabbar {
+      display: flex;
+      background: rgba(0,0,0,0.35);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 9;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 11px 4px;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.2s;
+    }
+
+    .tab-btn:hover { color: #ccc; }
+
+    .tab-btn.active { color: var(--primary); }
+
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      bottom: 0; left: 15%;
+      width: 70%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      box-shadow: 0 0 8px var(--primary);
+      border-radius: 2px;
+    }
+
+    .tab-panel { display: none; padding: 16px 18px 18px; }
+    .tab-panel.active { display: block; }
+
+    /* CARDS */
+    .rack-mount {
+      background: var(--panel-bg);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(4px);
+    }
+
+    .section-title {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .eq-grid {
+      display: flex;
+      justify-content: space-between;
+      height: 130px;
+      align-items: flex-end;
+      padding: 0 3px;
+    }
+
+    .eq-band {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 28px;
+      position: relative;
+    }
+
+    .eq-band input[type=range] {
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent;
+      width: 96px;
+      height: 6px;
+      transform: rotate(-90deg) translate(20px, 0);
+      transform-origin: 50% 50%;
+      outline: none;
+      cursor: pointer;
+      margin-bottom: 38px;
+      z-index: 2;
+    }
+
+    .eq-band input::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 4px;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 2px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .eq-band input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 13px;
+      width: 13px;
+      border-radius: 50%;
+      margin-top: -4.5px;
+      background: #000;
+      border: 2px solid var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .eq-band input:hover::-webkit-slider-thumb {
+      transform: scale(1.2);
+      box-shadow: 0 0 15px var(--primary);
+    }
+
+    .eq-label {
+      position: absolute;
+      bottom: -4px;
+      font-size: 8.5px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .control-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 11px;
+      transition: 0.2s;
+    }
+
+    .control-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .control-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 7px;
+    }
+
+    .control-label {
+      font-size: 9.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .control-val {
+      font-size: 10.5px;
+      color: var(--primary);
+      font-family: monospace;
+    }
+
+    input[type=range].horiz {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+    }
+
+    input[type=range].horiz::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: #000;
+      border: 2px solid var(--primary);
+      box-shadow: 0 0 8px var(--primary);
+      cursor: pointer;
+      transition: 0.1s;
+    }
+
+    input[type=range].horiz::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      box-shadow: 0 0 15px var(--primary);
+    }
+
+    select.mini {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      outline: none;
+      cursor: pointer;
+    }
+    select.mini option { background: #1a1a2e; }
+
+    .btn-main {
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 800;
+      width: 100%;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 15px rgba(0, 242, 255, 0.3);
+      transition: 0.2s;
+    }
+
+    .btn-main:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(189, 0, 255, 0.5);
+    }
+
+    .btn-main:active { transform: translateY(1px); }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.05);
+      color: #ccc;
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 10px 16px;
+      border-radius: 20px;
+      font-size: 10.5px;
+      font-weight: 700;
+      width: 100%;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: 0.2s;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); border-color: var(--primary); color: var(--primary); }
+
+    .help-text {
+      font-size: 9px;
+      color: #555;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #333;
+      transition: .3s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    .switch input:checked + .slider {
+      background-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+    }
+    .switch input:checked + .slider:before { transform: translateX(18px); }
+
+    .effect-block {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+    .effect-block:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+
+    .sub-controls {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .sub-controls.open { display: flex; }
+
+    .preset-select {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #fff;
+      padding: 10px 15px;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2300f2ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+    }
+    .preset-select option { background: #1a1a2e; color: #fff; }
+    .preset-select optgroup { background: #111; color: var(--primary); font-weight: 700; }
+
+    .orbit-canvas-wrap {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      margin: 4px 0 14px;
+    }
+    #orbit-canvas {
+      background: radial-gradient(circle at center, rgba(0,242,255,0.06) 0%, rgba(0,0,0,0.4) 75%);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 50%;
+    }
+    .elev-bar-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .elev-bar {
+      position: relative;
+      width: 14px;
+      height: 150px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 7px;
+    }
+    .elev-marker {
+      position: absolute;
+      left: 1px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--secondary);
+      box-shadow: 0 0 8px var(--secondary);
+      transition: top 0.1s linear;
+    }
+    .elev-bar-label { font-size: 8px; color: var(--text-muted); letter-spacing: 1px; }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div class="brand">
+      <img src="data:image/png;base64,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" style="width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 0 10px var(--primary);">
+      SONIC<span>LAYER</span>
+    </div>
+    <button id="power" class="power-btn">
+      <div class="status-dot"></div> <span id="power-text">ONLINE</span>
+    </button>
+  </div>
+
+  <div class="viz-container">
+    <div class="viz-overlay">SPECTRUM</div>
+    <div class="viz-site" id="site-badge">—</div>
+    <canvas id="viz"></canvas>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab-btn active" data-tab="dashboard">Dash</button>
+    <button class="tab-btn" data-tab="eq">EQ</button>
+    <button class="tab-btn" data-tab="fx">Effects</button>
+    <button class="tab-btn" data-tab="spatial">3D</button>
+    <button class="tab-btn" data-tab="master">Master</button>
+    <button class="tab-btn" data-tab="presets">Presets</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="tab-panel active" id="tab-dashboard">
+    <div class="rack-mount">
+      <div class="section-title"><span>Master Output</span></div>
+      <div class="control-grid">
+        <div class="control-card">
+          <div class="control-head"><span class="control-label">Gain</span> <span class="control-val" id="l-gain">1.0</span></div>
+          <input type="range" id="gain" class="horiz" min="0" max="3" step="0.1" value="1">
+        </div>
+        <div class="control-card" style="grid-column: span 1;">
+          <div class="control-head"><span class="control-label">Limiter Threshold</span> <span class="control-val" id="l-limit">-10dB</span></div>
+          <input type="range" id="limit" class="horiz" min="-40" max="0" value="-10">
+        </div>
+      </div>
+    </div>
+
+    <div class="rack-mount">
+      <div class="section-title"><span>Spatial</span></div>
+      <div class="help-text" style="margin:0; text-align:left;">Binaural 8D Orbit — 5 motion modes, distance/elevation cues, and a live 3D indicator. Configure it in the <strong>3D</strong> tab.</div>
+    </div>
+
+    <button id="activate" class="btn-ghost">Reset Everything To Defaults</button>
+    <div class="help-text">Detected media element is auto-processed locally — nothing leaves your browser.<br>Shortcut: <strong>Alt+Shift+S</strong> toggles power without opening this popup.</div>
+  </div>
+
+  <!-- EQUALIZER -->
+  <div class="tab-panel" id="tab-eq">
+    <div class="rack-mount">
+      <div class="section-title">
+        <span>Graphic Equalizer</span>
+        <span style="color:var(--secondary)">10-BAND</span>
+      </div>
+      <div class="eq-grid" id="eq-root"></div>
+    </div>
+
+    <div class="control-grid">
+      <div class="control-card">
+        <div class="control-head"><span class="control-label">Bass Engine</span> <span class="control-val" id="l-bass">0</span></div>
+        <input type="range" id="bass" class="horiz" min="0" max="15" value="0">
+      </div>
+      <div class="control-card">
+        <div class="control-head"><span class="control-label">Voice Focus</span> <span class="control-val" id="l-voice">0</span></div>
+        <input type="range" id="voice" class="horiz" min="0" max="15" value="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- EFFECTS -->
+  <div class="tab-panel" id="tab-fx">
+    <div class="rack-mount">
+
+      <div class="effect-block">
+        <div class="toggle-row">
+          <div>
+            <div class="control-label" style="margin-bottom:2px;">Echo / Delay</div>
+            <div class="help-text" style="margin:0; text-align:left;">Spatial feedback engine</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="delay-enable"><span class="slider"></span></label>
+        </div>
+        <div class="sub-controls" id="delay-controls">
+          <div>
+            <div class="control-head"><span class="control-label">Time</span><span class="control-val" id="l-delay-time">500ms</span></div>
+            <input type="range" id="delay-time" class="horiz" min="50" max="2000" step="10" value="500">
+          </div>
+          <div>
+            <div class="control-head"><span class="control-label">Feedback</span><span class="control-val" id="l-delay-feedback">30%</span></div>
+            <input type="range" id="delay-feedback" class="horiz" min="0" max="90" step="1" value="30">
+          </div>
+          <div>
+            <div class="control-head"><span class="control-label">Mix</span><span class="control-val" id="l-delay-mix">40%</span></div>
+            <input type="range" id="delay-mix" class="horiz" min="0" max="100" step="1" value="40">
+          </div>
+        </div>
+      </div>
+
+      <div class="effect-block">
+        <div class="toggle-row">
+          <div>
+            <div class="control-label" style="margin-bottom:2px;">Reverb</div>
+            <div class="help-text" style="margin:0; text-align:left;">Convolution room simulation</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="reverb-enable"><span class="slider"></span></label>
+        </div>
+        <div class="sub-controls" id="reverb-controls">
+          <div>
+            <div class="control-head"><span class="control-label">Room Type</span></div>
+            <select id="reverb-room" class="mini">
+              <option value="room">Room (0.8s)</option>
+              <option value="hall" selected>Hall (2.2s)</option>
+              <option value="plate">Plate (1.4s)</option>
+              <option value="cathedral">Cathedral (4.5s)</option>
+            </select>
+          </div>
+          <div>
+            <div class="control-head"><span class="control-label">Mix</span><span class="control-val" id="l-reverb-mix">25%</span></div>
+            <input type="range" id="reverb-mix" class="horiz" min="0" max="100" step="1" value="25">
+          </div>
+        </div>
+      </div>
+
+      <div class="effect-block">
+        <div class="toggle-row">
+          <div>
+            <div class="control-label" style="margin-bottom:2px;">Chorus</div>
+            <div class="help-text" style="margin:0; text-align:left;">Modulated doubling / shimmer</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="chorus-enable"><span class="slider"></span></label>
+        </div>
+        <div class="sub-controls" id="chorus-controls">
+          <div>
+            <div class="control-head"><span class="control-label">Rate</span><span class="control-val" id="l-chorus-rate">1.0Hz</span></div>
+            <input type="range" id="chorus-rate" class="horiz" min="0.1" max="5" step="0.1" value="1">
+          </div>
+          <div>
+            <div class="control-head"><span class="control-label">Depth</span><span class="control-val" id="l-chorus-depth">6ms</span></div>
+            <input type="range" id="chorus-depth" class="horiz" min="0" max="20" step="1" value="6">
+          </div>
+          <div>
+            <div class="control-head"><span class="control-label">Mix</span><span class="control-val" id="l-chorus-mix">25%</span></div>
+            <input type="range" id="chorus-mix" class="horiz" min="0" max="100" step="1" value="25">
+          </div>
+        </div>
+      </div>
+
+      <div class="effect-block">
+        <div class="toggle-row">
+          <div>
+            <div class="control-label" style="margin-bottom:2px;">Phaser</div>
+            <div class="help-text" style="margin:0; text-align:left;">Sweeping all-pass filter motion</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="phaser-enable"><span class="slider"></span></label>
+        </div>
+        <div class="sub-controls" id="phaser-controls">
+          <div>
+            <div class="control-head"><span class="control-label">Rate</span><span class="control-val" id="l-phaser-rate">0.5Hz</span></div>
+            <input type="range" id="phaser-rate" class="horiz" min="0.05" max="3" step="0.05" value="0.5">
+          </div>
+          <div>
+            <div class="control-head"><span class="control-label">Depth</span><span class="control-val" id="l-phaser-depth">50</span></div>
+            <input type="range" id="phaser-depth" class="horiz" min="0" max="100" step="1" value="50">
+          </div>
+          <div>
+            <div class="control-head"><span class="control-label">Center Freq</span><span class="control-val" id="l-phaser-freq">800Hz</span></div>
+            <input type="range" id="phaser-freq" class="horiz" min="200" max="3000" step="10" value="800">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SPATIAL / 8D ORBIT -->
+  <div class="tab-panel" id="tab-spatial">
+    <div class="rack-mount">
+      <div class="toggle-row">
+        <div>
+          <div class="control-label" style="margin-bottom:2px;">8D Binaural Orbit</div>
+          <div class="help-text" style="margin:0; text-align:left;">Real HRTF spatialization, not a pan trick. Softly mutes Stereo Width (Master tab) while active — see README for why full binaural can't be 100% mono-safe.</div>
+        </div>
+        <label class="switch"><input type="checkbox" id="eightD"><span class="slider"></span></label>
+      </div>
+
+      <div class="orbit-canvas-wrap">
+        <canvas id="orbit-canvas" width="150" height="150"></canvas>
+        <div class="elev-bar-wrap">
+          <span class="elev-bar-label">UP</span>
+          <div class="elev-bar"><div class="elev-marker" id="elev-marker" style="top:70px;"></div></div>
+          <span class="elev-bar-label">DOWN</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="control-head"><span class="control-label">Orbit Mode</span></div>
+        <select id="orbit-mode" class="mini">
+          <option value="circle">Circle</option>
+          <option value="figure8">Figure-8</option>
+          <option value="spiral">Spiral</option>
+          <option value="random">Random Smooth</option>
+          <option value="manual">Manual Position</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="rack-mount" id="orbit-motion-controls">
+      <div class="section-title"><span>Motion</span></div>
+      <div class="control-grid">
+        <div class="control-card">
+          <div class="control-head"><span class="control-label">Speed</span><span class="control-val" id="l-orbit-speed">1.0×</span></div>
+          <input type="range" id="orbit-speed" class="horiz" min="0.05" max="3" step="0.05" value="1">
+        </div>
+        <div class="control-card">
+          <div class="control-head"><span class="control-label">Radius</span><span class="control-val" id="l-orbit-radius">3.0</span></div>
+          <input type="range" id="orbit-radius" class="horiz" min="1" max="8" step="0.5" value="3">
+        </div>
+        <div class="control-card">
+          <div class="control-head"><span class="control-label">Elevation</span><span class="control-val" id="l-orbit-elevation">0.0</span></div>
+          <input type="range" id="orbit-elevation" class="horiz" min="-3" max="3" step="0.25" value="0">
+        </div>
+        <div class="control-card">
+          <div class="control-head"><span class="control-label">Depth</span><span class="control-val" id="l-orbit-depth">1.0×</span></div>
+          <input type="range" id="orbit-depth" class="horiz" min="0.3" max="2" step="0.1" value="1">
+        </div>
+      </div>
+      <div class="control-card" style="margin-top:12px;">
+        <div class="control-head"><span class="control-label">Randomness</span><span class="control-val" id="l-orbit-randomness">0%</span></div>
+        <input type="range" id="orbit-randomness" class="horiz" min="0" max="100" step="1" value="0">
+      </div>
+    </div>
+
+    <div class="rack-mount" id="orbit-manual-controls" style="display:none;">
+      <div class="section-title"><span>Manual Position</span></div>
+      <div class="control-card">
+        <div class="control-head"><span class="control-label">Azimuth</span><span class="control-val" id="l-orbit-az">0°</span></div>
+        <input type="range" id="orbit-az" class="horiz" min="-180" max="180" step="5" value="0">
+      </div>
+      <div class="control-grid" style="margin-top:12px;">
+        <div class="control-card">
+          <div class="control-head"><span class="control-label">Elevation</span><span class="control-val" id="l-orbit-el">0°</span></div>
+          <input type="range" id="orbit-el" class="horiz" min="-90" max="90" step="5" value="0">
+        </div>
+        <div class="control-card">
+          <div class="control-head"><span class="control-label">Distance</span><span class="control-val" id="l-orbit-dist">3.0</span></div>
+          <input type="range" id="orbit-dist" class="horiz" min="1" max="8" step="0.5" value="3">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MASTERING -->
+  <div class="tab-panel" id="tab-master">
+    <div class="rack-mount">
+
+      <div class="effect-block">
+        <div class="toggle-row">
+          <div>
+            <div class="control-label" style="margin-bottom:2px;">Stereo Widener</div>
+            <div class="help-text" style="margin:0; text-align:left;">Real mid/side processing — not a pan trick. Disabled while 8D Orbit is on.</div>
+          </div>
+        </div>
+        <div class="sub-controls open" style="margin-top:10px;">
+          <div>
+            <div class="control-head"><span class="control-label">Width</span><span class="control-val" id="l-width">Normal</span></div>
+            <input type="range" id="width" class="horiz" min="-1" max="1" step="0.1" value="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="effect-block">
+        <div class="toggle-row">
+          <div>
+            <div class="control-label" style="margin-bottom:2px;">Multiband Compressor</div>
+            <div class="help-text" style="margin:0; text-align:left;">3-band (Low / Mid / High) dynamics control</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="mbcomp-enable"><span class="slider"></span></label>
+        </div>
+        <div class="sub-controls" id="mbcomp-controls">
+          <div>
+            <div class="control-head"><span class="control-label">Amount</span><span class="control-val" id="l-mbcomp-amount">40</span></div>
+            <input type="range" id="mbcomp-amount" class="horiz" min="0" max="100" step="1" value="40">
+          </div>
+          <div class="control-grid">
+            <div class="control-card">
+              <div class="control-head"><span class="control-label">Low Trim</span><span class="control-val" id="l-mbcomp-low">0dB</span></div>
+              <input type="range" id="mbcomp-low" class="horiz" min="-6" max="6" step="0.5" value="0">
+            </div>
+            <div class="control-card">
+              <div class="control-head"><span class="control-label">Mid Trim</span><span class="control-val" id="l-mbcomp-mid">0dB</span></div>
+              <input type="range" id="mbcomp-mid" class="horiz" min="-6" max="6" step="0.5" value="0">
+            </div>
+          </div>
+          <div class="control-card">
+            <div class="control-head"><span class="control-label">High Trim</span><span class="control-val" id="l-mbcomp-high">0dB</span></div>
+            <input type="range" id="mbcomp-high" class="horiz" min="-6" max="6" step="0.5" value="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="effect-block">
+        <div class="toggle-row">
+          <div>
+            <div class="control-label" style="margin-bottom:2px;">Auto Leveler</div>
+            <div class="help-text" style="margin:0; text-align:left;">RMS-based loudness leveling (approximate, not true LUFS)</div>
+          </div>
+          <label class="switch"><input type="checkbox" id="autolevel-enable"><span class="slider"></span></label>
+        </div>
+        <div class="sub-controls" id="autolevel-controls">
+          <div>
+            <div class="control-head"><span class="control-label">Target Level</span><span class="control-val" id="l-autolevel-target">-18dB</span></div>
+            <input type="range" id="autolevel-target" class="horiz" min="-30" max="-6" step="1" value="-18">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PRESETS -->
+  <div class="tab-panel" id="tab-presets">
+    <div class="rack-mount">
+      <div class="section-title">
+        <span>Sound Preset</span>
+        <span style="color:var(--primary)">QUICK MODE</span>
+      </div>
+      <select id="presets" class="preset-select">
+        <option value="manual">Manual / Custom</option>
+        <optgroup label="General">
+          <option value="balanced">Balanced (Flat)</option>
+          <option value="bass">Bass Booster</option>
+          <option value="treble">Treble Booster</option>
+          <option value="night">Night Mode</option>
+        </optgroup>
+        <optgroup label="Genres">
+          <option value="rock">Rock / Pop</option>
+          <option value="soft">Soft / Acoustic</option>
+          <option value="classic">Classical</option>
+          <option value="jazz">Jazz</option>
+          <option value="electronic">Electronic / EDM</option>
+          <option value="hiphop">Hip-Hop</option>
+          <option value="lofi">Lo-Fi</option>
+        </optgroup>
+        <optgroup label="Voice & Streaming">
+          <option value="vocal">Vocal Booster</option>
+          <option value="podcast">Podcast / Speech</option>
+          <option value="cinema">Cinema / Dialogue</option>
+        </optgroup>
+        <optgroup label="Gaming">
+          <option value="fps">Gaming — FPS (Footsteps)</option>
+          <option value="rpg">Gaming — RPG / Immersive</option>
+        </optgroup>
+      </select>
+      <div class="help-text" style="text-align:left;">Presets set EQ, Bass and Voice Focus. Moving any slider afterward switches you to Manual.</div>
+    </div>
+
+    <div class="rack-mount">
+      <div class="section-title">
+        <span>Site Profile</span>
+        <span style="color:var(--primary)" id="profile-badge">—</span>
+      </div>
+      <div class="help-text" style="text-align:left; margin-top:0;">Every setting on this page is saved separately per website. Switching tabs to a different site loads that site's own profile automatically.</div>
+      <button id="reset-site" class="btn-ghost" style="margin-top:10px;">Reset This Site's Profile</button>
+    </div>
+
+    <div class="rack-mount">
+      <div class="section-title"><span>Backup</span></div>
+      <div class="control-grid">
+        <button id="export-settings" class="btn-ghost">Export JSON</button>
+        <button id="import-settings" class="btn-ghost">Import JSON</button>
+      </div>
+      <input type="file" id="import-file-input" accept=".json,application/json" style="display:none;">
+      <div class="help-text" style="text-align:left;">Exports all site profiles + defaults. Import overwrites your current profiles.</div>
+    </div>
+
+    <button id="reset-preset" class="btn-main">Reset To Defaults</button>
+  </div>
+
+  <script src="orbit-math.js"></script>
+  <script src="popup.js"></script>
+</body>
+
+</html>
